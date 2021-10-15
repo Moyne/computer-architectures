@@ -8,11 +8,11 @@ matA    DB  3,14,-15,9,26,-53,5,89,79,3,23,84,-6,26,43,-3,83,27,-9,50,28,-88,41,
 matB    DB  37,-101,0,58,-20,9,74,94,-4,59,-23,90,-78,16,-4,0,-62,86,20,89,9,86,28,0,-34,82,5,34,-21,1,70,-67,9,82,14
 matRes  DW  N*P DUP (0)
 matOf   DB  N*P DUP (0)
-nRow    DB  0 
-indexOf DW  0
+nRow    DB  0
 .CODE
 .STARTUP 
 XOR DX,DX					;Setting up pointers and counters 
+lEA BP,matOf
 LEA SI,matRes
 LEA BX,matA
 LEA DI,matB
@@ -24,23 +24,20 @@ SUB DH,M
 CMP nRow,N                  ;check if I ended the matrix
 JE end
 ADD SI,P*2
-ADD indexOf,P
+ADD BP,P
 LEA DI,matB
 sameRow:                    ;I am in the same row
 MOV CL,[BX]                 ;read the next value from matA that needs to be multiplicate with a whole row
 loop:
 MOV AL,[DI]                 ;read the new value from matB 
-PUSH DI                     ;I have to use the overflow matrix so I have to push and then pop this pointer because I can't use BP
-MOV DI,indexOf
 IMUL CL
 ADD [SI],AX
-ADC matOf[DI],0             ;Adding the carry to the overflow matrix
+ADC DS:[BP],0             ;Adding the carry to the overflow matrix
 CMP AX,0
 JGE pos
-ADD matOf[DI],0FFH          ;If the number is negative I still have to add 0FFFFH other than the carry in the overflow matrix
+ADD DS:[BP],0FFH          ;If the number is negative I still have to add 0FFFFH other than the carry in the overflow matrix
 pos:
-POP DI
-INC indexOf                 ;Adjusting pointers and counters
+INC BP                 ;Adjusting pointers and counters
 ADD SI,2
 INC DI
 INC DL
@@ -48,7 +45,7 @@ CMP DL,P                    ;Checking if I reached the end of the row in matB
 JNE loop
 SUB DL,P                    ;If I reached a new row I must readjust the pointers and counters
 SUB SI,P*2
-SUB indexOf,P
+SUB BP,P
 INC DH                      ;Updating the index of which position in a row my pointer for matA is pointing to   
 INC BX
 JMP setup
